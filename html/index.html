@@ -1,0 +1,106 @@
+
+<!doctype html>
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <meta name="viewport" content="width=1280 height=598 user-scalable=no" />
+		<script src="/bootstrap/js/jquery.js"></script> <!-- Replace this path with a valid version of JQuery -->
+		<style>
+			.fp {
+				width: 200px;
+				height: 40px;
+				padding: 3px 8px;
+				color: #ffffff;
+				background-color: #000000;
+				border-radius: 4px;
+				position: absolute;
+			}
+		</style>
+        <title>Wii U Controller (Nintendofan9797)</title>
+        <script type="text/javascript">
+            var xhReq = new XMLHttpRequest();
+
+            function init()
+            {
+                if(window.wiiu)
+                {
+					window.history.forward();
+                    setInterval('update()', 40);
+                } else {
+					alert("This page is only compatible with the Wii U internet browser!");
+					window.history.back();
+				}
+            }
+
+            function update()
+            {
+                var gamepadState = window.wiiu.gamepad.update();
+                if(gamepadState.isEnabled && gamepadState.isDataValid)
+                {
+					document.getElementById("HELD").innerHTML = "HELD MASK: " + gamepadState.hold;
+					
+					if(gamepadState.tpTouch){
+						document.getElementById("TOUCH").innerHTML = "TOUCH: YEP! ~ X: " + gamepadState.contentX + " Y: " + gamepadState.contentY;
+						$("#trains").css({left: (gamepadState.contentX - 64) + 'px', top: (gamepadState.contentY - 64) + 'px'});
+					} else {
+						document.getElementById("TOUCH").innerHTML = "TOUCH: NOPE";
+					}
+					
+					var i;
+					var mask = 0x80000000;
+					var props = {l_stick_left: 0, l_stick_right: 0, l_stick_up: 0, l_stick_down: 0, r_stick_left: 0, r_stick_right: 0, r_stick_up: 0, r_stick_down: 0, l_stick_press: 0, r_stick_press: 0, a: 0, b: 0, x: 0, y: 0, left: 0, right: 0, up: 0, down: 0, zl: 0, zr: 0, plus: 0, minus: 0, tt_x: 0, tt_y: 0, tt: 0};
+					for(i = 0; i < 59; i += 2, mask = (mask >>> 1)){
+						var isHeld = (gamepadState.hold & 0x7f86fffc & mask) ? 1: 0;
+						if(i == 2) props.l_stick_left = (isHeld? 1 : 0);
+						if(i == 4) props.l_stick_right = (isHeld? 1 : 0);
+						if(i == 6) props.l_stick_up = (isHeld? 1 : 0);
+						if(i == 8) props.l_stick_down = (isHeld? 1 : 0);
+						if(i == 10) props.r_stick_left = (isHeld? 1 : 0);
+						if(i == 12) props.r_stick_right = (isHeld? 1 : 0);
+						if(i == 14) props.r_stick_up = (isHeld? 1 : 0);
+						if(i == 16) props.r_stick_down = (isHeld? 1 : 0);
+						if(i == 26) props.l_stick_press = (isHeld? 1 : 0);
+						if(i == 28) props.r_stick_press = (isHeld? 1 : 0);
+						if(i == 32) props.a = (isHeld? 1 : 0);
+						if(i == 36) props.x = (isHeld? 1 : 0);
+						if(i == 40) props.left = (isHeld? 1 : 0);
+						if(i == 42) props.right = (isHeld? 1 : 0);
+						if(i == 44) props.up = (isHeld? 1 : 0);
+						if(i == 46) props.down = (isHeld? 1 : 0);
+						if(i == 48) props.zl = (isHeld? 1 : 0);
+						if(i == 50) props.zr = (isHeld? 1 : 0);
+						if(i == 56) props.plus = (isHeld? 1 : 0);
+						if(i == 58) props.minus = (isHeld? 1 : 0);
+					}
+					if(gamepadState.tpTouch){
+						props.tt = 1;
+						props.tt_x = gamepadState.contentX;
+						props.tt_y = gamepadState.contentY;
+					}
+                    xhReq.open("POST", "http://192.168.1.98:8080/button", true); //Replace this URL with the accessible path to the Java Applet machine. This file and the Java Applet DO NOT HAVE TO BE ON THE SAME COMPUTER.
+                    xhReq.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                    xhReq.send("gamepadstate=" + JSON.stringify(props));
+                }
+				document.getElementById("ACCEL").innerHTML = "Acceleromter:  (X: " + gamepadState.accX.toFixed(3) + " ~ Y: " + gamepadState.accY.toFixed(3) + " ~ Z: " + gamepadState.accZ.toFixed(3) + ")";
+				document.getElementById("GYRO").innerHTML = "Gyro: (X: " + gamepadState.gyroX.toFixed(3) + " ~ Y: " + gamepadState.gyroY.toFixed(3) + " ~ Z: " + gamepadState.gyroZ.toFixed(3) + ")";
+				document.getElementById("ANG").innerHTML = "Angle: (X: " + gamepadState.angleX.toFixed(3) + " ~ Y: " + gamepadState.angleY.toFixed(3) + " ~ Z: " + gamepadState.angleZ.toFixed(3) + ")";
+            }
+			
+        </script>
+    </head>
+    <body onload="init();">
+		<h2 id="HELD">HELD MASK: NONE</h2>
+		<h2 id="TOUCH">TOUCH: NOPE</h2>
+		<h2 id="ACCEL">Acceleromter: (X) ~ (Y) ~ (Z)</h2>
+		<h2 id="GYRO">Gyro: (X) ~ (Y) ~ (Z)</h2>
+		<h2 id="ANG">Angle: (X) ~ (Y) ~ (Z)</h2>
+		<h2 id="ORIENTX">OrientationX: (X) ~ (Y) ~ (Z)</h2>
+		<h2 id="ORIENTY">OrientationY: (X) ~ (Y) ~ (Z)</h2>
+		<h2 id="ORIENTZ">OrientationZ: (X) ~ (Y) ~ (Z)</h2>
+		
+    </body>
+	<img id="trains" src="/39.gif" width="128px" height="128px" style="position: absolute;"></img>
+	
+	
+	
+</html>
