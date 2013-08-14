@@ -51,14 +51,38 @@ import java.util.Scanner;
  */
 public class WiiUController {
 
+    /**
+     * Should rob take control of mouse?
+     */
     private static boolean move_mouse = false;
-    private static int mx = 0;
-    private static int my = 0;
+    
+    
+    /**
+     * Right mouse binding held
+     */
     private static boolean right = false;
+    
+    /**
+     * Left mouse binding held
+     */
     private static boolean left = false;
+    
+    /**
+     * Left mouse binding released
+     */
     private static boolean l1 = false;
+    
+    /**
+     * Right mouse binding released
+     */
     private static boolean r1 = false;
-    private static final int sensitivity = 25;
+    
+    /**
+     * How far to move when stuff.
+     */
+    private static final int sensitivity = 50;
+    
+    private static boolean p_pressed = false;    
 
     public static void main(String[] args) {
 	try {
@@ -115,7 +139,7 @@ public class WiiUController {
 		    pw.close();
 		    continue;
 		}
-		if (!command.split(" ")[1].equals("/")) {
+		if (!command.split(" ")[1].equals("/control")) {
 		    continue;
 		}
 		while (sc.hasNextLine()) {
@@ -123,7 +147,7 @@ public class WiiUController {
 		    if (next.equals("")) {
 			next = sc.nextLine();
 			//System.out.println(next);
-			HashMap<String, Integer> keys = parseRead(next);
+			HashMap<String, Float> keys = parseRead(next);
 			if (keys.get("zl") == 1) {
 			    left = true;
 			} else {
@@ -153,32 +177,34 @@ public class WiiUController {
 			    }
 			}
 
-			if (keys.get("r_stick_left") == 1) {
-			    mx -= sensitivity;
-			}
-			if (keys.get("r_stick_right") == 1) {
-			    mx += sensitivity;
-			}
-			if (keys.get("r_stick_up") == 1) {
-			    my -= sensitivity;
-			}
-			if (keys.get("r_stick_down") == 1) {
-			    my += sensitivity;
-			}
+		
 
 			if (keys.get("plus") == 1) {
-			    move_mouse = true;
+			    if(!p_pressed){
+			    move_mouse = !move_mouse;
+			    p_pressed = true;
+			    }
+			} else { 
+			    if(p_pressed){
+				p_pressed = false;
+			    }
 			}
-			if (keys.get("minus") == 1) {
-			    move_mouse = false;
+			
+			if(keys.get("minus") == 1){
+			    rob.keyPress(KeyEvent.VK_Z);
+			} else {
+			    rob.keyRelease(KeyEvent.VK_Z);
 			}
+			
 			if (move_mouse) {
 			    //System.out.println(mx + " : " + my);
-			    rob.mouseMove(mx, my);
 			    Point p = MouseInfo.getPointerInfo().getLocation();
-			    //System.out.println(p.x + " @ " + p.y);
-			    mx = 681;
-			    my = 386;
+			    float x = sensitivity * keys.get("r_x_deflect");
+			    float y = sensitivity * keys.get("r_y_deflect");
+			    //System.out.println("MOVING TO: " + x + " ~ " + y);
+			    
+			    rob.mouseMove((int)(p.x + x), (int)(p.y - y));
+//			    System.out.println(p.x + " @ " + p.y);
 			}
 			if (keys.get("l_stick_up") == 1) {
 			    //System.out.println("FORWARD");
@@ -201,15 +227,57 @@ public class WiiUController {
 			} else {
 			    rob.keyRelease(KeyEvent.VK_RIGHT);
 			}
+			
+			if(keys.get("r") == 1){
+			    rob.keyPress(KeyEvent.VK_Q);
+			} else {
+			    rob.keyRelease(KeyEvent.VK_Q);
+			}
+			
+			if(keys.get("l_stick_press") == 1){
+			    rob.keyPress(KeyEvent.VK_G);
+			} else {
+			    rob.keyRelease(KeyEvent.VK_G);
+			}
+			
+			if(keys.get("r_stick_press") == 1){
+			    rob.keyPress(KeyEvent.VK_ESCAPE);
+			} else {
+			    rob.keyRelease(KeyEvent.VK_ESCAPE);
+			}
 
 			if (keys.get("a") == 1) {
 			    rob.keyPress(KeyEvent.VK_SPACE);
+			} else {
 			    rob.keyRelease(KeyEvent.VK_SPACE);
 			}
 
 			if (keys.get("x") == 1) {
-			    rob.keyPress(KeyEvent.VK_SHIFT);
+			    rob.keyPress(KeyEvent.VK_SHIFT); 
+			} else {
 			    rob.keyRelease(KeyEvent.VK_SHIFT);
+			}
+			
+			if(keys.get("up") == 1){
+			    rob.mouseWheel(1);
+			}
+			if(keys.get("down") == 1){
+			    rob.mouseWheel(-1);
+			}
+			
+			if(keys.get("left") == 1){
+			    rob.keyPress(KeyEvent.VK_R);
+			} else {
+			    rob.keyRelease(KeyEvent.VK_R);
+			}
+			if(keys.get("right") == 1){
+			    rob.keyPress(KeyEvent.VK_X);
+			} else {
+			    rob.keyRelease(KeyEvent.VK_X);
+			}
+			
+			if(keys.get("tt") == 1){
+			    rob.mouseMove((int)(keys.get("tt_x") + 0), (int)(keys.get("tt_y") + 0));
 			}
 		    }
 		}
@@ -225,15 +293,15 @@ public class WiiUController {
 	}
     }
 
-    private static HashMap<String, Integer> parseRead(String line) {
-	HashMap<String, Integer> ret = new HashMap<>();
+    private static HashMap<String, Float> parseRead(String line) {
+	HashMap<String, Float> ret = new HashMap<>();
 	line = line.replace("gamepadstate={", "");
 	line = line.replace("}", "");
 	String[] params = line.split(",");
 	for (String param : params) {
 	    String[] split = param.split(":");
 	    String key = split[0].replace("\"", "");
-	    Integer val = Integer.parseInt(split[1]);
+	    float val = Float.parseFloat(split[1]);
 	    ret.put(key, val);
 	}
 	return ret;
@@ -289,7 +357,7 @@ public class WiiUController {
 		+ "					\n"
 		+ "					var i;\n"
 		+ "					var mask = 0x80000000;\n"
-		+ "					var props = {l_stick_left: 0, l_stick_right: 0, l_stick_up: 0, l_stick_down: 0, r_stick_left: 0, r_stick_right: 0, r_stick_up: 0, r_stick_down: 0, l_stick_press: 0, r_stick_press: 0, a: 0, b: 0, x: 0, y: 0, left: 0, right: 0, up: 0, down: 0, zl: 0, zr: 0, plus: 0, minus: 0, tt_x: 0, tt_y: 0, tt: 0};\n"
+		+ "					var props = {r: 0, l_stick_left: 0, l_stick_right: 0, l_stick_up: 0, l_stick_down: 0, r_stick_left: 0, r_stick_right: 0, r_stick_up: 0, r_stick_down: 0, l_stick_press: 0, r_stick_press: 0, a: 0, b: 0, x: 0, y: 0, left: 0, right: 0, up: 0, down: 0, zl: 0, zr: 0, plus: 0, minus: 0, tt_x: 0, tt_y: 0, tt: 0, l_x_deflect: 0, l_y_deflect: 0, r_x_deflect: 0, r_y_deflect: 0};\n"
 		+ "					for(i = 0; i < 59; i += 2, mask = (mask >>> 1)){\n"
 		+ "						var isHeld = (gamepadState.hold & 0x7f86fffc & mask) ? 1: 0;\n"
 		+ "						if(i == 2) props.l_stick_left = (isHeld? 1 : 0);\n"
@@ -309,7 +377,8 @@ public class WiiUController {
 		+ "						if(i == 44) props.up = (isHeld? 1 : 0);\n"
 		+ "						if(i == 46) props.down = (isHeld? 1 : 0);\n"
 		+ "						if(i == 48) props.zl = (isHeld? 1 : 0);\n"
-		+ "						if(i == 50) props.zr = (isHeld? 1 : 0);\n"
+		+ "						if(i == 50) props.zr = (isHeld? 1 : 0);"
+		+ "if(i == 54) props.r = (isHeld? 1 : 0);\n"
 		+ "						if(i == 56) props.plus = (isHeld? 1 : 0);\n"
 		+ "						if(i == 58) props.minus = (isHeld? 1 : 0);\n"
 		+ "					}\n"
@@ -317,14 +386,20 @@ public class WiiUController {
 		+ "						props.tt = 1;\n"
 		+ "						props.tt_x = gamepadState.contentX;\n"
 		+ "						props.tt_y = gamepadState.contentY;\n"
-		+ "					}\n"
-		+ "                    xhReq.open(\"POST\", \"http://" + InetAddress.getLocalHost().getHostAddress() + ":8080\", true);\n"
+		+ "					}"
+		+ "props.l_x_deflect = gamepadState.lStickX;"
+		+ "props.l_y_deflect = gamepadState.lStickY;"
+		+ "props.r_x_deflect = gamepadState.rStickX;"
+		+ "props.r_y_deflect = gamepadState.rStickY;\n"
+		+ "                    xhReq.open(\"POST\", \"http://" + InetAddress.getLocalHost().getHostAddress() + ":8080/control\", true);\n"
 		+ "                    xhReq.setRequestHeader(\"Content-type\", \"application/x-www-form-urlencoded\");\n"
 		+ "                    xhReq.send(\"gamepadstate=\" + JSON.stringify(props));\n"
 		+ "                }\n"
 		+ "				document.getElementById(\"ACCEL\").innerHTML = \"Acceleromter:  (X: \" + gamepadState.accX.toFixed(3) + \" ~ Y: \" + gamepadState.accY.toFixed(3) + \" ~ Z: \" + gamepadState.accZ.toFixed(3) + \")\";\n"
 		+ "				document.getElementById(\"GYRO\").innerHTML = \"Gyro: (X: \" + gamepadState.gyroX.toFixed(3) + \" ~ Y: \" + gamepadState.gyroY.toFixed(3) + \" ~ Z: \" + gamepadState.gyroZ.toFixed(3) + \")\";\n"
 		+ "				document.getElementById(\"ANG\").innerHTML = \"Angle: (X: \" + gamepadState.angleX.toFixed(3) + \" ~ Y: \" + gamepadState.angleY.toFixed(3) + \" ~ Z: \" + gamepadState.angleZ.toFixed(3) + \")\";\n"
+		+ "				document.getElementById(\"DEFLECTL\").innerHTML = \"Deflector L: (X: \" + gamepadState.lStickX + \" ~ Y: \" + gamepadState.lStickY + \")\";"
+		+ "				document.getElementById(\"DEFLECTR\").innerHTML = \"Deflector R: (X: \" + gamepadState.rStickX + \" ~ Y: \" + gamepadState.rStickY + \")\";"
 		+ "            }\n"
 		+ "			\n"
 		+ "        </script>\n"
@@ -338,7 +413,9 @@ public class WiiUController {
 		+ "		<h2 id=\"ORIENTX\">OrientationX: (X) ~ (Y) ~ (Z)</h2>\n"
 		+ "		<h2 id=\"ORIENTY\">OrientationY: (X) ~ (Y) ~ (Z)</h2>\n"
 		+ "		<h2 id=\"ORIENTZ\">OrientationZ: (X) ~ (Y) ~ (Z)</h2>\n"
-		+ "<h2>To start using mouse control, press + then move the right stick. Press - to stop mouse control.</h2>"
+		+ "<h2 id=\"DEFLECTL\">Deflector L: (X) ~ (Y)</h2>\n"
+		+ "<h2 id=\"DEFLECTR\">Deflector R: (X) ~ (Y)</h2>\n"
+		+ "<h2>To start using mouse control, press + then move the right stick. Press + again to stop mouse control.</h2>"
 		+ "		\n"
 		+ "    </body>\n"
 		+ "	<img id=\"trains\" src=\"/39.gif\" width=\"128px\" height=\"128px\" style=\"position: absolute;\"></img>\n"
